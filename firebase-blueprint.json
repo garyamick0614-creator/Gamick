@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information including role and live status.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "sitter", "parent", "viewer"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "batteryLevel": { "type": "number" },
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "notificationSettings": { "type": "object" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "CalendarEvent": {
+      "title": "Calendar Event",
+      "description": "A shared family event.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
+        "attendees": { "type": "array", "items": { "type": "string" } },
+        "createdBy": { "type": "string" },
+        "reminderMinutes": { "type": "number" }
+      },
+      "required": ["title", "startTime", "endTime", "attendees", "createdBy"]
+    },
+    "Job": {
+      "title": "Parent Job",
+      "description": "A job or workplace for a parent.",
+      "type": "object",
+      "properties": {
+        "parentUid": { "type": "string" },
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "location": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["parentUid", "title"]
+    },
+    "Schedule": {
+      "title": "Schedule Entry",
+      "description": "A recurring or one-time schedule entry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "jobId": { "type": "string" },
+        "title": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "daysOfWeek": { "type": "array", "items": { "type": "number" } },
+        "recurring": { "type": "boolean" }
+      },
+      "required": ["uid", "title", "startTime", "endTime", "daysOfWeek", "recurring"]
+    },
+    "Shift": {
+      "title": "Work Shift",
+      "description": "A record of a sitter's work shift.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "completed"] },
+        "startLocation": { "type": "object" },
+        "endLocation": { "type": "object" },
+        "durationMinutes": { "type": "number" },
+        "amountOwed": { "type": "number" }
+      },
+      "required": ["uid", "startTime", "status"]
+    },
+    "Request": {
+      "title": "Care Request",
+      "description": "A request for food, supplies, or time off.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "type": { "type": "string", "enum": ["food", "time", "supply", "other"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "description": { "type": "string" },
+        "cost": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "type", "status", "description"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "A message in one of the family chat rooms.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "text": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["text", "photo", "system"] }
+      },
+      "required": ["roomId", "text", "senderUid", "timestamp"]
+    },
+    "Photo": {
+      "title": "Care Photo",
+      "description": "A photo documenting care activities.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "url": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "location": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved"] },
+        "caption": { "type": "string" }
+      },
+      "required": ["uid", "url", "timestamp", "status"]
+    },
+    "Supply": {
+      "title": "Supply Tracking",
+      "description": "Inventory tracking for baby supplies.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "stockLevel": { "type": "number" },
+        "threshold": { "type": "number" },
+        "unit": { "type": "string" }
+      },
+      "required": ["name", "stockLevel", "threshold"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and status."
+    },
+    "/shifts/{shiftId}": {
+      "schema": "Shift",
+      "description": "Work history and payroll data."
+    },
+    "/requests/{requestId}": {
+      "schema": "Request",
+      "description": "Pending and past requests."
+    },
+    "/messages/{roomId}/chats/{messageId}": {
+      "schema": "Message",
+      "description": "Chat history for different rooms."
+    },
+    "/photos/{photoId}": {
+      "schema": "Photo",
+      "description": "Photo journal entries."
+    },
+    "/supplies/{supplyId}": {
+      "schema": "Supply",
+      "description": "Inventory tracking."
+    },
+    "/events/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "Shared family calendar events."
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Parent job definitions."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Recurring and one-time schedules."
+    }
+  }
+}

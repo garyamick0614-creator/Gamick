@@ -1,0 +1,5 @@
+{
+  "name": "Nevaeh Care Family Hub",
+  "description": "Complete family coordination for Nevaeh's care, featuring real-time GPS tracking, messaging, financial tracking, and request management.",
+  "requestFramePermissions": ["geolocation", "microphone"]
+}

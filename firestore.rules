@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, email, role, displayName, photoURL, batteryLevel, lastSeen, location
+    //
+    // Collection: shifts
+    // Fields: uid, startTime, endTime, status, startLocation, endLocation, durationMinutes, amountOwed
+    //
+    // Collection: requests
+    // Fields: uid, type, status, description, cost, timestamp
+    //
+    // Collection: messages/{roomId}/chats
+    // Fields: roomId, text, senderUid, senderName, timestamp, type
+    //
+    // Collection: photos
+    // Fields: uid, url, timestamp, location, status, caption
+    //
+    // Collection: supplies
+    // Fields: name, stockLevel, threshold, unit
+    //
+    // Collection: events
+    // Fields: title, startTime, endTime, location, attendees, reminderMinutes, uid
+    //
+    // Collection: jobs
+    // Fields: employer, role, uid
+    //
+    // Collection: schedules
+    // Fields: title, startTime, endTime, daysOfWeek, recurring, uid, jobId
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == 'gary.amick0614@gmail.com');
+    }
+
+    function isParent() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'parent' || isAdmin());
+    }
+
+    function isSitter() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sitter';
+    }
+
+    function isViewer() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'viewer';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Validation Functions
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'parent', 'sitter', 'viewer'];
+    }
+
+    function isValidShift(data) {
+      return data.keys().hasAll(['uid', 'startTime', 'status']) &&
+             data.uid is string &&
+             data.status in ['active', 'completed'];
+    }
+
+    function isValidRequest(data) {
+      return data.keys().hasAll(['uid', 'type', 'status', 'description']) &&
+             data.uid is string &&
+             data.type in ['food', 'time', 'supply', 'other'] &&
+             data.status in ['pending', 'approved', 'rejected'];
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    match /shifts/{shiftId} {
+      allow read: if isParent() || isSitter();
+      allow create: if (isSitter() || isAdmin()) && isValidShift(request.resource.data);
+      allow update: if isParent() || isSitter();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isParent() || isSitter();
+      allow create: if (isSitter() || isAdmin()) && isValidRequest(request.resource.data);
+      allow update: if isParent() || isSitter();
+    }
+
+    match /messages/{roomId}/chats/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.senderUid == request.auth.uid;
+    }
+
+    match /photos/{photoId} {
+      allow read: if isAuthenticated();
+      allow create: if isSitter() || isParent();
+      allow update: if isParent();
+    }
+
+    match /supplies/{supplyId} {
+      allow read: if isAuthenticated();
+      allow write: if isSitter() || isParent();
+    }
+
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow write: if isParent() || isSitter();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow write: if isParent();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if isAuthenticated();
+      allow write: if isParent() || isSitter();
+    }
+  }
+}
